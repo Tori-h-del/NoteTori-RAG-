@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Note{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4 d-flex justify-content-between align-items-center">
+        <h2>我的笔记列表</h2>
+        <div>
+            <a href="{{ url_for('export_notes_md') }}" class="btn btn-outline-secondary me-2">导出为markdown格式</a>
+            <a href="{{ url_for('create_note') }}" class="btn btn-primary">新建笔记</a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% if notes %}
+        {% for note in notes %}
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">{{ note.title }}</h5>
+                            <span class="badge bg-info text-dark">{{ note.category }}</span>
+                        </div>
+                        <p class="card-text text-truncate">{{ note.content }}</p>
+                        <p class="card-text"><small class="text-muted">创建于: {{ note.created_at.strftime('%Y-%m-%d %H:%M') if note.created_at else '未知' }}</small></p>
+                    </div>
+                    <div class="card-footer bg-white border-top-0 d-flex justify-content-between">
+                        <a href="{{ url_for('view_note', id=note.id) }}" class="btn btn-sm btn-outline-info">查看</a>
+                        <div class="btn-group">
+                            <a href="{{ url_for('edit_note', id=note.id) }}" class="btn btn-sm btn-outline-secondary">编辑</a>
+                            <form action="{{ url_for('delete_note', id=note.id) }}" method="POST" class="d-inline" onsubmit="return confirm('确定删除吗？');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12 text-center py-5">
+            <p class="text-muted">还没有笔记，快去创建一个吧！</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

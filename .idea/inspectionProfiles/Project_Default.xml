@@ -1,0 +1,19 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="HtmlUnknownTarget" enabled="true" level="INFORMATION" enabled_by_default="true" editorAttributes="INFORMATION_ATTRIBUTES" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="Flask" />
+          <option value="pytest" />
+          <option value="flask" />
+          <option value="jinja2" />
+          <option value="itsdangerous" />
+          <option value="markupsafe" />
+          <option value="werkzeug" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>

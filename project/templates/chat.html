@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}AI 助手 - Flask 笔记{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow" style="height: 80vh;">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-cpu"></i> RAG智能助手</h5>
+                <button id="clearChat" class="btn btn-sm btn-outline-light">清空对话</button>
+            </div>
+            <div id="chatBox" class="card-body overflow-auto" style="background-color: #f8f9fa; scroll-behavior: smooth;">
+                {% if history %}
+                    {% for msg in history %}
+                        <div class="mb-3 d-flex {{ 'justify-content-end' if msg.role == 'user' else 'justify-content-start' }}">
+                            <div class="p-3 rounded shadow-sm" style="max-width: 80%; {{ 'background-color: #007bff; color: white;' if msg.role == 'user' else 'background-color: white; border: 1px solid #dee2e6;' }}">
+                                <strong>{{ '我' if msg.role == 'user' else 'NoteTori' }}:</strong><br>
+                                <div class="message-content">
+                                    {{ msg.content | markdown | safe if msg.role == 'assistant' else msg.content }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-journal-text" style="font-size: 3rem;"></i>
+                        <p class="mt-3">你好！我是你的专属RAG助手。<br>我会查阅你的笔记库来回答你的问题。</p>
+                    </div>
+                {% endif %}
+            </div>
+            <div id="statusIndicator" class="px-3 py-1 bg-light border-top d-none">
+                <small class="text-muted"><i class="spinner-border spinner-border-sm me-1" role="status"></i> 正在查阅笔记库...</small>
+            </div>
+            <div class="card-footer bg-white border-top">
+                <form id="chatForm" class="d-flex">
+                    <input type="text" id="userInput" class="form-control me-2" placeholder="输入您的问题..." autocomplete="off">
+                    <button type="submit" id="sendBtn" class="btn btn-primary">发送</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chatBox = document.getElementById('chatBox');
+    const chatForm = document.getElementById('chatForm');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearChat = document.getElementById('clearChat');
+    const statusIndicator = document.getElementById('statusIndicator');
+
+    // 自动滚动到底部
+    function scrollToBottom() {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+    scrollToBottom();
+
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const message = userInput.value.trim();
+        if (!message) return;
+
+        // 禁用输入，显示状态
+        userInput.value = '';
+        userInput.disabled = true;
+        sendBtn.disabled = true;
+        statusIndicator.classList.remove('d-none');
+
+        // 添加用户消息到界面
+        appendMessage('user', message);
+        scrollToBottom();
+
+        try {
+            const response = await fetch('/ai/chat/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message })
+            });
+            const data = await response.json();
+            
+            statusIndicator.classList.add('d-none');
+
+            if (data.error) {
+                appendMessage('assistant', '错误: ' + data.error);
+            } else {
+                appendMessage('assistant', data.response, data.source_notes);
+            }
+        } catch (error) {
+            statusIndicator.classList.add('d-none');
+            appendMessage('assistant', '网络请求失败，请稍后再试。');
+        } finally {
+            userInput.disabled = false;
+            sendBtn.disabled = false;
+            userInput.focus();
+            scrollToBottom();
+        }
+    });
+
+    clearChat.addEventListener('click', async () => {
+        if (!confirm('确定要清空所有对话记录吗？')) return;
+        await fetch('/ai/chat/clear', { method: 'POST' });
+        chatBox.innerHTML = '<div class="text-center text-muted py-5"><p>对话已清空。</p></div>';
+    });
+
+    function appendMessage(role, content, sources = []) {
+        const div = document.createElement('div');
+        div.className = `mb-3 d-flex ${role === 'user' ? 'justify-content-end' : 'justify-content-start'}`;
+        
+        const innerDiv = document.createElement('div');
+        innerDiv.className = 'p-3 rounded shadow-sm';
+        innerDiv.style.maxWidth = '80%';
+        if (role === 'user') {
+            innerDiv.style.backgroundColor = '#007bff';
+            innerDiv.style.color = 'white';
+        } else {
+            innerDiv.style.backgroundColor = 'white';
+            innerDiv.style.border = '1px solid #dee2e6';
+        }
+
+        const label = document.createElement('strong');
+        label.textContent = role === 'user' ? '我:' : 'Notetori:';
+        innerDiv.appendChild(label);
+        innerDiv.appendChild(document.createElement('br'));
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.textContent = content; 
+        innerDiv.appendChild(contentDiv);
+
+        // 如果有来源，添加来源显示
+        if (sources && sources.length > 0) {
+            const sourceDiv = document.createElement('div');
+            sourceDiv.className = 'mt-2 pt-2 border-top small text-muted';
+            sourceDiv.innerHTML = '<strong>参考笔记：</strong>' + sources.join(', ');
+            innerDiv.appendChild(sourceDiv);
+        }
+
+        div.appendChild(innerDiv);
+        chatBox.appendChild(div);
+    }
+</script>
+{% endblock %}
